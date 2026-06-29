@@ -15,6 +15,8 @@ app.get('/api/health', (req: Request, res: Response) => {
   res.json({ status: 'ok', message: 'Expense Tracker API is running' });
 });
 
+app.use("/api/auth", authRoutes);
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
