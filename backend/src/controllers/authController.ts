@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../config/prisma';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 export const register = async (req: Request, res: Response) => {
     try {
@@ -54,19 +55,43 @@ export const login = async (req: Request, res: Response) => {
         const { email, password } = req.body;
 
         // initial validation
-
+        if (!email || !password) {
+            return res.status(400).json({ message: "missing fields" })
+        }
         // find user by email
+        const user = await prisma.user.findUnique({
+            where: {
+                email
+            }
+        })
 
         // if does not exist 401 
-
+        if (!user) {
+            return res.status(401).json({ message: "invalid credentials" })
+        }
         // compare password with bcrypt.compare
-
+        const isPasswordMatch = await bcrypt.compare(password, user.password)
         // if not match 400
-
+        if (!isPasswordMatch) {
+            return res.status(401).json({ message: "invalid credentials" })
+        }
         // generate jwt token with jwt.sign
-
-        // resend tocen and user data
-
+        const token = jwt.sign(
+            {
+                id: user.id, email: user.email
+            },
+            process.env.JWT_SECRET || 'fallback-secret-key',
+            {
+                expiresIn: '24h'
+            }
+        )
+        // resend token and user data
+        const { password: _password, ...userWithoutPassword } = user;
+        return res.status(200).json({
+            message: "user logged in",
+            token,
+            user: userWithoutPassword
+        })
 
     }
     catch (error) {
